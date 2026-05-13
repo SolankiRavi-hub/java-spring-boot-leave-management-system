@@ -14,6 +14,7 @@
         .center-col { text-align: center; }
         .id-col { width: 80px; }
         .date-col { width: 120px; }
+        .type-col { width: 100px; }
         .status-col { width: 120px; }
         .action-col { width: 220px; }
         .reason-col { min-width: 360px; white-space: normal; word-break: break-word; }
@@ -52,6 +53,7 @@
                 <th class="center-col id-col">Emp ID</th>
                 <th class="date-col">Start Date</th>
                 <th class="date-col">End Date</th>
+                <th class="type-col">Leave Type</th>
                 <th class="reason-col">Reason</th>
                 <th class="status-col">Status</th>
                 <th class="center-col action-col">Action</th>
@@ -59,7 +61,7 @@
             <c:choose>
                 <c:when test="${empty requests}">
                     <tr>
-                        <td colspan="7" style="text-align:center;">No leave requests found.</td>
+                        <td colspan="8" style="text-align:center;">No leave requests found.</td>
                     </tr>
                 </c:when>
                 <c:otherwise>
@@ -69,6 +71,7 @@
                             <td class="center-col id-col">${req.employeeId}</td>
                             <td class="date-col">${req.startDate}</td>
                             <td class="date-col">${req.endDate}</td>
+                            <td class="type-col">${req.leaveType}</td>
                             <td class="reason-col">${req.reason}</td>
                             <td class="status-col">
                                 <span class="status-badge status-${req.status.toLowerCase()}">${req.status}</span>

@@ -26,6 +26,9 @@ public class LeaveService {
     @Autowired
     private EmailService emailService;
 
+    @Autowired
+    private com.leavemanagement.dao.LeaveQuotaDAO leaveQuotaDAO;
+
     /**
      * Submit a new leave request.
      * The status is automatically set to "Pending" in the DAO.
@@ -60,6 +63,11 @@ public class LeaveService {
             return;
         }
 
+        // Deduct balance from quota when approving
+        if ("Approved".equals(status)) {
+            deductLeaveBalance(leave);
+        }
+
         leaveDAO.updateLeaveStatus(id, status);
 
         // Send email notification to employee (best-effort)
@@ -92,5 +100,56 @@ public class LeaveService {
      */
     public boolean updatePendingLeave(LeaveRequest leave) {
         return leaveDAO.updatePendingLeave(leave);
+    }
+
+    /**
+     * Calculate number of days between two dates (inclusive of both end dates).
+     */
+    public int calculateLeaveDays(java.sql.Date startDate, java.sql.Date endDate) {
+        long diff = endDate.getTime() - startDate.getTime();
+        // +1 to include both start and end dates
+        return (int) (diff / (1000 * 60 * 60 * 24)) + 1;
+    }
+
+    /**
+     * Check if employee has enough leave balance for the requested days and type.
+     */
+    @Transactional(readOnly = true)
+    public boolean hasEnoughLeaveBalance(int employeeId, String leaveType, int daysRequested) {
+        int currentYear = java.time.Year.now().getValue();
+        return leaveQuotaDAO.hasEnoughBalance(employeeId, leaveType, daysRequested, currentYear);
+    }
+
+    /**
+     * Get remaining leave balance for employee and leave type.
+     */
+    @Transactional(readOnly = true)
+    public int getRemainingLeaveBalance(int employeeId, String leaveType) {
+        int currentYear = java.time.Year.now().getValue();
+        return leaveQuotaDAO.getRemainingBalance(employeeId, leaveType, currentYear);
+    }
+
+    /**
+     * Deduct leave days from quota when admin approves a request.
+     */
+    public void deductLeaveBalance(LeaveRequest leave) {
+        int currentYear = java.time.Year.now().getValue();
+        com.leavemanagement.model.LeaveQuota quota = leaveQuotaDAO.getQuotaByEmployeeAndType(
+            leave.getEmployeeId(), leave.getLeaveType(), currentYear);
+
+        if (quota != null && quota.getRemainingDays() >= 0) {
+            int daysRequested = calculateLeaveDays(leave.getStartDate(), leave.getEndDate());
+            quota.setUsedDays(quota.getUsedDays() + daysRequested);
+            quota.setRemainingDays(quota.getRemainingDays() - daysRequested);
+            leaveQuotaDAO.updateQuota(quota);
+        }
+    }
+
+    /**
+     * Restore leave balance if request is rejected.
+     */
+    public void restoreLeaveBalance(LeaveRequest leave) {
+        // This is for future use if we want to handle rejections
+        // Currently balance is only deducted on approval
     }
 }

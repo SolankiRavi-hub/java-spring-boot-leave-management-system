@@ -35,6 +35,9 @@ public class LeaveRequest {
     @Column(nullable = false, length = 50)
     private String status;
 
+    @Column(name = "leave_type", nullable = false, length = 50)
+    private String leaveType;
+
     public LeaveRequest() {
     }
 
@@ -44,6 +47,15 @@ public class LeaveRequest {
         this.endDate = endDate;
         this.reason = reason;
         this.status = status;
+    }
+
+    public LeaveRequest(int employeeId, Date startDate, Date endDate, String reason, String status, String leaveType) {
+        this.employeeId = employeeId;
+        this.startDate = startDate;
+        this.endDate = endDate;
+        this.reason = reason;
+        this.status = status;
+        this.leaveType = leaveType;
     }
 
     public int getId() { return id; }
@@ -63,4 +75,7 @@ public class LeaveRequest {
     
     public String getStatus() { return status; }
     public void setStatus(String status) { this.status = status; }
+    
+    public String getLeaveType() { return leaveType; }
+    public void setLeaveType(String leaveType) { this.leaveType = leaveType; }
 }
