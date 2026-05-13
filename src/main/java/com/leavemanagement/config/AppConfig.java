@@ -20,8 +20,13 @@ import org.springframework.transaction.annotation.EnableTransactionManagement;
 import org.springframework.web.servlet.config.annotation.EnableWebMvc;
 import org.springframework.web.servlet.config.annotation.WebMvcConfigurer;
 import org.springframework.web.servlet.view.InternalResourceViewResolver;
+import org.springframework.mail.javamail.JavaMailSender;
+import org.springframework.mail.javamail.JavaMailSenderImpl;
+import org.springframework.core.env.Environment;
+import org.springframework.context.annotation.PropertySource;
 
 @Configuration
+@PropertySource(value = "classpath:mail.properties", ignoreResourceNotFound = true)
 @EnableWebMvc
 @EnableTransactionManagement
 @ComponentScan(basePackages = "com.leavemanagement")
@@ -111,5 +116,44 @@ public class AppConfig implements WebMvcConfigurer {
         }
 
         return new Object();
+    }
+
+    @Bean
+    public JavaMailSender javaMailSender(Environment env) {
+        JavaMailSenderImpl mailSender = new JavaMailSenderImpl();
+        // Priority: OS environment variables > mail.properties > sensible defaults
+        String host = System.getenv("MAIL_HOST");
+        if (host == null) host = env.getProperty("mail.host");
+        String portStr = System.getenv("MAIL_PORT");
+        if (portStr == null) portStr = env.getProperty("mail.port");
+        String username = System.getenv("MAIL_USERNAME");
+        if (username == null) username = env.getProperty("mail.username");
+        String password = System.getenv("MAIL_PASSWORD");
+        if (password == null) password = env.getProperty("mail.password");
+
+        mailSender.setHost(host != null ? host : "localhost");
+        try {
+            mailSender.setPort(portStr != null ? Integer.parseInt(portStr) : 25);
+        } catch (NumberFormatException ex) {
+            mailSender.setPort(25);
+        }
+
+        if (username != null) {
+            mailSender.setUsername(username);
+        }
+        if (password != null) {
+            mailSender.setPassword(password);
+        }
+
+        Properties props = mailSender.getJavaMailProperties();
+        props.put("mail.transport.protocol", "smtp");
+        boolean auth = (username != null);
+        props.put("mail.smtp.auth", auth ? "true" : "false");
+        String starttls = System.getenv("MAIL_STARTTLS");
+        if (starttls == null) starttls = env.getProperty("mail.starttls", "false");
+        props.put("mail.smtp.starttls.enable", starttls);
+        props.put("mail.debug", "false");
+
+        return mailSender;
     }
 }

@@ -20,6 +20,12 @@ public class LeaveService {
     @Autowired
     private LeaveDAO leaveDAO;
 
+    @Autowired
+    private com.leavemanagement.dao.EmployeeDAO employeeDAO;
+
+    @Autowired
+    private EmailService emailService;
+
     /**
      * Submit a new leave request.
      * The status is automatically set to "Pending" in the DAO.
@@ -48,7 +54,22 @@ public class LeaveService {
      * Update the status of a leave request (Approved or Rejected).
      */
     public void updateLeaveStatus(int id, String status) {
+        // Fetch leave and employee details first so we can send notification after update
+        com.leavemanagement.model.LeaveRequest leave = leaveDAO.getLeaveById(id);
+        if (leave == null) {
+            return;
+        }
+
         leaveDAO.updateLeaveStatus(id, status);
+
+        // Send email notification to employee (best-effort)
+        com.leavemanagement.model.Employee emp = employeeDAO.getEmployeeById(leave.getEmployeeId());
+        try {
+            emailService.sendLeaveStatusEmail(emp, leave, status);
+        } catch (Exception ex) {
+            // swallow to avoid breaking flow; logging would be better
+            System.err.println("Failed to send leave status notification: " + ex.getMessage());
+        }
     }
 
     /**

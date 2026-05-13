@@ -18,25 +18,21 @@ public class EmployeeService {
     @Autowired
     private EmployeeDAO employeeDAO;
 
-    /**
-     * Register a new employee.
-     */
+
+     //Register a new employee.
+
     public void registerEmployee(Employee employee) {
         employeeDAO.registerEmployee(employee);
     }
 
-    /**
-     * Authenticate an employee with email and password.
-     * Returns Employee object if successful, null otherwise.
-     */
+
     @Transactional(readOnly = true)
     public Employee authenticate(String email, String password) {
         return employeeDAO.authenticate(email, password);
     }
 
-    /**
-     * Retrieve employee details by ID.
-     */
+    // Retrieve employee details by ID.
+
     @Transactional(readOnly = true)
     public Employee getEmployeeById(int id) {
         return employeeDAO.getEmployeeById(id);

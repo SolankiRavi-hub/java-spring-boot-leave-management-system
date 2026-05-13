@@ -40,8 +40,16 @@ public class LeaveDAOImpl implements LeaveDAO {
         LeaveRequest leaveRequest = entityManager.find(LeaveRequest.class, id);
         if (leaveRequest != null) {
             leaveRequest.setStatus(status);
-            entityManager.merge(leaveRequest);
+            entityManager.createQuery("UPDATE LeaveRequest l SET l.status = :status WHERE l.id = :id")
+                                  .setParameter("status", status)
+                                  .setParameter("id", id)
+                                  .executeUpdate();
         }
+    }
+
+    @Override
+    public LeaveRequest getLeaveById(int id) {
+        return entityManager.find(LeaveRequest.class, id);
     }
 
     @Override
@@ -66,6 +74,7 @@ public class LeaveDAOImpl implements LeaveDAO {
         }
         return results.get(0);
     }
+
 
     @Override
     public boolean updatePendingLeave(LeaveRequest leave) {
