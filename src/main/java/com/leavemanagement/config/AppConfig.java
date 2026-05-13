@@ -95,6 +95,21 @@ public class AppConfig implements WebMvcConfigurer {
                 "end_date DATE NOT NULL," +
                 "reason VARCHAR(500)," +
                 "status VARCHAR(50) DEFAULT 'Pending'," +
+                "leave_type VARCHAR(50) DEFAULT 'Casual' NOT NULL," +
+                "FOREIGN KEY (employee_id) REFERENCES employees(id) ON DELETE CASCADE" +
+                ")"
+            );
+
+            statement.execute(
+                "CREATE TABLE IF NOT EXISTS leave_quota (" +
+                "id INT PRIMARY KEY AUTO_INCREMENT," +
+                "employee_id INT NOT NULL," +
+                "leave_type VARCHAR(50) NOT NULL," +
+                "total_days INT NOT NULL," +
+                "used_days INT DEFAULT 0," +
+                "remaining_days INT NOT NULL," +
+                "year INT NOT NULL," +
+                "UNIQUE KEY unique_quota (employee_id, leave_type, year)," +
                 "FOREIGN KEY (employee_id) REFERENCES employees(id) ON DELETE CASCADE" +
                 ")"
             );
@@ -110,6 +125,41 @@ public class AppConfig implements WebMvcConfigurer {
                 insertAdmin.setString(5, "Admin");
                 insertAdmin.setString(6, "admin@company.com");
                 insertAdmin.executeUpdate();
+            }
+
+            // Initialize quotas for all employees
+            int currentYear = java.time.Year.now().getValue();
+            try (PreparedStatement insertQuotas = connection.prepareStatement(
+                "INSERT INTO leave_quota (employee_id, leave_type, total_days, used_days, remaining_days, year) " +
+                "SELECT e.id, ?, ?, 0, ?, ? FROM employees e " +
+                "WHERE NOT EXISTS (SELECT 1 FROM leave_quota lq WHERE lq.employee_id = e.id AND lq.leave_type = ? AND lq.year = ?)"
+            )) {
+                // Casual Leave
+                insertQuotas.setString(1, "Casual");
+                insertQuotas.setInt(2, 12);
+                insertQuotas.setInt(3, 12);
+                insertQuotas.setInt(4, currentYear);
+                insertQuotas.setString(5, "Casual");
+                insertQuotas.setInt(6, currentYear);
+                insertQuotas.executeUpdate();
+
+                // Sick Leave
+                insertQuotas.setString(1, "Sick");
+                insertQuotas.setInt(2, 7);
+                insertQuotas.setInt(3, 7);
+                insertQuotas.setInt(4, currentYear);
+                insertQuotas.setString(5, "Sick");
+                insertQuotas.setInt(6, currentYear);
+                insertQuotas.executeUpdate();
+
+                // Personal Leave
+                insertQuotas.setString(1, "Personal");
+                insertQuotas.setInt(2, 3);
+                insertQuotas.setInt(3, 3);
+                insertQuotas.setInt(4, currentYear);
+                insertQuotas.setString(5, "Personal");
+                insertQuotas.setInt(6, currentYear);
+                insertQuotas.executeUpdate();
             }
         } catch (Exception ex) {
             throw new IllegalStateException("Failed to initialize schema", ex);
