@@ -13,6 +13,11 @@ target/
 *.db
 *.log
 
+# Configuration files (contains sensitive info)
+mail.properties
+application.properties
+application-*.properties
+
 # Documentation (keep locally, don't push)
 *.md
 *.pptx
@@ -33,5 +38,7 @@ Thumbs.db
 .project
 .classpath
 .settings/
+
+
 
 

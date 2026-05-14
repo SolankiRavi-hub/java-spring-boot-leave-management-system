@@ -23,10 +23,8 @@ import org.springframework.web.servlet.view.InternalResourceViewResolver;
 import org.springframework.mail.javamail.JavaMailSender;
 import org.springframework.mail.javamail.JavaMailSenderImpl;
 import org.springframework.core.env.Environment;
-import org.springframework.context.annotation.PropertySource;
 
 @Configuration
-@PropertySource(value = "classpath:mail.properties", ignoreResourceNotFound = true)
 @EnableWebMvc
 @EnableTransactionManagement
 @ComponentScan(basePackages = "com.leavemanagement")
@@ -182,23 +180,15 @@ public class AppConfig implements WebMvcConfigurer {
     public JavaMailSender javaMailSender(Environment env) {
         JavaMailSenderImpl mailSender = new JavaMailSenderImpl();
 
-        // Priority: OS environment variables > mail.properties > sensible defaults
+        // Read configuration from environment variables (.env file)
+        // Examples: MAIL_HOST, MAIL_PORT, MAIL_USERNAME, MAIL_PASSWORD, MAIL_STARTTLS, MAIL_FROM
         String host = System.getenv("MAIL_HOST");
-        if (host == null) host = env.getProperty("mail.host");
-
         String portStr = System.getenv("MAIL_PORT");
-        if (portStr == null) portStr = env.getProperty("mail.port");
-
         String username = System.getenv("MAIL_USERNAME");
-        if (username == null) username = env.getProperty("mail.username");
-
         String password = System.getenv("MAIL_PASSWORD");
-        if (password == null) password = env.getProperty("mail.password");
-
         String starttlsStr = System.getenv("MAIL_STARTTLS");
-        if (starttlsStr == null) starttlsStr = env.getProperty("mail.starttls", "false");
 
-        // Set mail server properties
+        // Set mail server properties with defaults
         mailSender.setHost(host != null ? host : "localhost");
         try {
             mailSender.setPort(portStr != null ? Integer.parseInt(portStr) : 25);
@@ -218,18 +208,19 @@ public class AppConfig implements WebMvcConfigurer {
 
         boolean auth = (username != null);
         props.put("mail.smtp.auth", auth ? "true" : "false");
-        props.put("mail.smtp.starttls.enable", starttlsStr);
-        props.put("mail.smtp.starttls.required", starttlsStr);
-        props.put("mail.debug", "true");  // ← Enable debug logging for troubleshooting
+        props.put("mail.smtp.starttls.enable", starttlsStr != null ? starttlsStr : "false");
+        props.put("mail.smtp.starttls.required", starttlsStr != null ? starttlsStr : "false");
+        props.put("mail.debug", "true");  // Enable debug logging for troubleshooting
 
         System.out.println("\n╔════════════════════════════════════════════════════════════════╗");
         System.out.println("║                   MAIL SERVER CONFIGURATION                    ║");
         System.out.println("╠════════════════════════════════════════════════════════════════╣");
-        System.out.println("║ Host: " + (host != null ? host : "localhost"));
+        System.out.println("║ Source: Environment Variables (.env file)");
+        System.out.println("║ Host: " + (host != null ? host : "localhost (DEFAULT)"));
         System.out.println("║ Port: " + mailSender.getPort());
-        System.out.println("║ Username: " + (username != null ? username : "(not set)"));
+        System.out.println("║ Username: " + (username != null ? "****" : "(not set)"));
         System.out.println("║ Auth Enabled: " + auth);
-        System.out.println("║ STARTTLS: " + starttlsStr);
+        System.out.println("║ STARTTLS: " + (starttlsStr != null ? starttlsStr : "false"));
         System.out.println("╚════════════════════════════════════════════════════════════════╝\n");
 
         return mailSender;
