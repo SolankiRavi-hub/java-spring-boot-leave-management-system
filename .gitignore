@@ -1,17 +1,37 @@
 ﻿# IDE files
 .idea/
 .vscode/
+
+# Build and compiled files
 *.class
 target/
+*.jar
+*.war
+
+# Sensitive files
 .env
 *.db
+*.log
+
+# Documentation (keep locally, don't push)
+*.md
+*.pptx
+*.xlsx
+*.sql
+maven_search.txt
+
+# Node/npm
 node_modules/
 
-# Documentation files (keep locally, don't push to GitHub)
-*.md
+# OS files
+.DS_Store
+Thumbs.db
 
 # Miscellaneous
-*.log
 *.swp
 *.swo
+.project
+.classpath
+.settings/
+
 

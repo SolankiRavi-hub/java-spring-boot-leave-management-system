@@ -37,6 +37,28 @@
         <c:if test="${not empty error}">
             <div class="error">${error}</div>
         </c:if>
+
+        <!-- Display Remaining Leave Balance -->
+        <div style="background-color: #e8f4f8; border: 1px solid #0288d1; border-radius: 4px; padding: 15px; margin-bottom: 20px;">
+            <p style="font-weight: bold; color: #0288d1; margin-top: 0;">📊 Your Remaining Leave Balance:</p>
+            <table style="width: 100%; border-spacing: 15px 5px; border: none;">
+                <tr>
+                    <td style="border: 1px solid #b3e5fc; padding: 8px; border-radius: 4px; background-color: #f1f8e9;">
+                        <strong style="color: #558b2f;">Casual Leave:</strong><br>
+                        <span style="font-size: 18px; font-weight: bold; color: #33691e;">${casualRemaining} days</span>
+                    </td>
+                    <td style="border: 1px solid #b3e5fc; padding: 8px; border-radius: 4px; background-color: #fff3e0;">
+                        <strong style="color: #e65100;">Sick Leave:</strong><br>
+                        <span style="font-size: 18px; font-weight: bold; color: #bf360c;">${sickRemaining} days</span>
+                    </td>
+                    <td style="border: 1px solid #b3e5fc; padding: 8px; border-radius: 4px; background-color: #fce4ec;">
+                        <strong style="color: #880e4f;">Personal Leave:</strong><br>
+                        <span style="font-size: 18px; font-weight: bold; color: #ad1457;">${personalRemaining} days</span>
+                    </td>
+                </tr>
+            </table>
+        </div>
+
         <form:form method="post" action="applyLeave" modelAttribute="leaveRequest">
             <table>
                 <tr>

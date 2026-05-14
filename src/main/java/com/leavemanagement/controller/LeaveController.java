@@ -57,7 +57,19 @@ public class LeaveController {
         if (!isLoggedIn(session)) {
             return "redirect:/login";
         }
+        
+        Employee emp = (Employee) session.getAttribute("loggedInUser");
+        
+        // Get remaining balance for all leave types
+        int casualRemaining = leaveService.getRemainingLeaveBalance(emp.getId(), "Casual");
+        int sickRemaining = leaveService.getRemainingLeaveBalance(emp.getId(), "Sick");
+        int personalRemaining = leaveService.getRemainingLeaveBalance(emp.getId(), "Personal");
+        
         model.addAttribute("leaveRequest", new LeaveRequest());
+        model.addAttribute("casualRemaining", casualRemaining);
+        model.addAttribute("sickRemaining", sickRemaining);
+        model.addAttribute("personalRemaining", personalRemaining);
+        
         return "applyLeave";
     }
 
@@ -87,10 +99,57 @@ public class LeaveController {
         }
 
         Employee emp = (Employee) session.getAttribute("loggedInUser");
+        
+        // Validate leave type is selected
+        if (leaveRequest.getLeaveType() == null || leaveRequest.getLeaveType().isEmpty()) {
+            model.addAttribute("error", "Please select a leave type.");
+            return "applyLeave";
+        }
+        
+        // Calculate days requested
+        int daysRequested = leaveService.calculateLeaveDays(
+            leaveRequest.getStartDate(), 
+            leaveRequest.getEndDate()
+        );
+        
+        // Check if employee has enough leave balance
+        if (!leaveService.hasEnoughLeaveBalance(emp.getId(), leaveRequest.getLeaveType(), daysRequested)) {
+            // Get remaining balance for all types to show
+            int casualRemaining = leaveService.getRemainingLeaveBalance(emp.getId(), "Casual");
+            int sickRemaining = leaveService.getRemainingLeaveBalance(emp.getId(), "Sick");
+            int personalRemaining = leaveService.getRemainingLeaveBalance(emp.getId(), "Personal");
+            
+            int currentTypeRemaining = leaveRequest.getLeaveType().equals("Casual") ? casualRemaining :
+                                       leaveRequest.getLeaveType().equals("Sick") ? sickRemaining :
+                                       personalRemaining;
+
+            String errorMsg = String.format(
+                "❌ Insufficient %s leave balance! You requested %d days but have only %d days remaining.\n\n" +
+                "Your remaining balance:\n" +
+                "• Casual Leave: %d days\n" +
+                "• Sick Leave: %d days\n" +
+                "• Personal Leave: %d days",
+                leaveRequest.getLeaveType(), 
+                daysRequested,
+                currentTypeRemaining,
+                casualRemaining,
+                sickRemaining,
+                personalRemaining
+            );
+            
+            model.addAttribute("error", errorMsg);
+            model.addAttribute("casualRemaining", casualRemaining);
+            model.addAttribute("sickRemaining", sickRemaining);
+            model.addAttribute("personalRemaining", personalRemaining);
+            model.addAttribute("leaveRequest", leaveRequest);
+            return "applyLeave";
+        }
+
         leaveRequest.setEmployeeId(emp.getId());
         leaveRequest.setStatus("Pending");
 
         leaveService.applyLeave(leaveRequest);
+        model.addAttribute("success", "Leave request submitted successfully for " + daysRequested + " days!");
         return "redirect:/viewHistory";
     }
 
@@ -131,8 +190,16 @@ public class LeaveController {
         if (leave == null || !"Pending".equals(leave.getStatus())) {
             return "redirect:/viewHistory";
         }
+        
+        // Get remaining balance for all leave types
+        int casualRemaining = leaveService.getRemainingLeaveBalance(emp.getId(), "Casual");
+        int sickRemaining = leaveService.getRemainingLeaveBalance(emp.getId(), "Sick");
+        int personalRemaining = leaveService.getRemainingLeaveBalance(emp.getId(), "Personal");
 
         model.addAttribute("leaveRequest", leave);
+        model.addAttribute("casualRemaining", casualRemaining);
+        model.addAttribute("sickRemaining", sickRemaining);
+        model.addAttribute("personalRemaining", personalRemaining);
         return "editLeave";
     }
 

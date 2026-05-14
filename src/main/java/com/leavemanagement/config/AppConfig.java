@@ -100,6 +100,16 @@ public class AppConfig implements WebMvcConfigurer {
                 ")"
             );
 
+            // Add missing leave_type column if it doesn't exist
+            try (java.sql.ResultSet rs = connection.getMetaData().getColumns(null, null, "leave_requests", "leave_type")) {
+                if (!rs.next()) {
+                    // Column doesn't exist, add it
+                    statement.execute("ALTER TABLE leave_requests ADD COLUMN leave_type VARCHAR(50) DEFAULT 'Casual' NOT NULL");
+                }
+            } catch (Exception e) {
+                // Silently handle - column might already exist
+            }
+
             statement.execute(
                 "CREATE TABLE IF NOT EXISTS leave_quota (" +
                 "id INT PRIMARY KEY AUTO_INCREMENT," +
@@ -171,16 +181,24 @@ public class AppConfig implements WebMvcConfigurer {
     @Bean
     public JavaMailSender javaMailSender(Environment env) {
         JavaMailSenderImpl mailSender = new JavaMailSenderImpl();
+
         // Priority: OS environment variables > mail.properties > sensible defaults
         String host = System.getenv("MAIL_HOST");
         if (host == null) host = env.getProperty("mail.host");
+
         String portStr = System.getenv("MAIL_PORT");
         if (portStr == null) portStr = env.getProperty("mail.port");
+
         String username = System.getenv("MAIL_USERNAME");
         if (username == null) username = env.getProperty("mail.username");
+
         String password = System.getenv("MAIL_PASSWORD");
         if (password == null) password = env.getProperty("mail.password");
 
+        String starttlsStr = System.getenv("MAIL_STARTTLS");
+        if (starttlsStr == null) starttlsStr = env.getProperty("mail.starttls", "false");
+
+        // Set mail server properties
         mailSender.setHost(host != null ? host : "localhost");
         try {
             mailSender.setPort(portStr != null ? Integer.parseInt(portStr) : 25);
@@ -197,12 +215,22 @@ public class AppConfig implements WebMvcConfigurer {
 
         Properties props = mailSender.getJavaMailProperties();
         props.put("mail.transport.protocol", "smtp");
+
         boolean auth = (username != null);
         props.put("mail.smtp.auth", auth ? "true" : "false");
-        String starttls = System.getenv("MAIL_STARTTLS");
-        if (starttls == null) starttls = env.getProperty("mail.starttls", "false");
-        props.put("mail.smtp.starttls.enable", starttls);
-        props.put("mail.debug", "false");
+        props.put("mail.smtp.starttls.enable", starttlsStr);
+        props.put("mail.smtp.starttls.required", starttlsStr);
+        props.put("mail.debug", "true");  // ← Enable debug logging for troubleshooting
+
+        System.out.println("\n╔════════════════════════════════════════════════════════════════╗");
+        System.out.println("║                   MAIL SERVER CONFIGURATION                    ║");
+        System.out.println("╠════════════════════════════════════════════════════════════════╣");
+        System.out.println("║ Host: " + (host != null ? host : "localhost"));
+        System.out.println("║ Port: " + mailSender.getPort());
+        System.out.println("║ Username: " + (username != null ? username : "(not set)"));
+        System.out.println("║ Auth Enabled: " + auth);
+        System.out.println("║ STARTTLS: " + starttlsStr);
+        System.out.println("╚════════════════════════════════════════════════════════════════╝\n");
 
         return mailSender;
     }

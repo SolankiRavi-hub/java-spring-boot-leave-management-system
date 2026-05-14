@@ -55,29 +55,58 @@ public class LeaveService {
 
     /**
      * Update the status of a leave request (Approved or Rejected).
+     * Also sends email notification to employee and deducts quota if approved.
      */
     public void updateLeaveStatus(int id, String status) {
+        System.out.println("\n═══════════════════════════════════════════════════════════");
+        System.out.println("📋 Updating Leave Request #" + id + " to status: " + status);
+        System.out.println("═══════════════════════════════════════════════════════════");
+
         // Fetch leave and employee details first so we can send notification after update
         com.leavemanagement.model.LeaveRequest leave = leaveDAO.getLeaveById(id);
         if (leave == null) {
+            System.err.println("❌ Error: Leave request #" + id + " not found");
             return;
         }
 
-        // Deduct balance from quota when approving
-        if ("Approved".equals(status)) {
-            deductLeaveBalance(leave);
+        System.out.println("✓ Leave found - Employee ID: " + leave.getEmployeeId());
+        System.out.println("✓ Leave Type: " + leave.getLeaveType());
+        System.out.println("✓ Period: " + leave.getStartDate() + " to " + leave.getEndDate());
+
+        // Get employee details
+        com.leavemanagement.model.Employee emp = employeeDAO.getEmployeeById(leave.getEmployeeId());
+        if (emp == null) {
+            System.err.println("❌ Error: Employee #" + leave.getEmployeeId() + " not found");
+            return;
         }
 
+        System.out.println("✓ Employee: " + emp.getName() + " (" + emp.getEmail() + ")");
+
+        // Deduct balance from quota when approving
+        if ("Approved".equals(status)) {
+            System.out.println("→ Processing approval - deducting leave quota...");
+            deductLeaveBalance(leave);
+        } else if ("Rejected".equals(status)) {
+            System.out.println("→ Request rejected - no quota deduction");
+        }
+
+        // Update status in database
+        System.out.println("→ Updating database status...");
         leaveDAO.updateLeaveStatus(id, status);
+        System.out.println("✓ Status updated in database");
 
         // Send email notification to employee (best-effort)
-        com.leavemanagement.model.Employee emp = employeeDAO.getEmployeeById(leave.getEmployeeId());
+        System.out.println("→ Sending email notification...");
         try {
             emailService.sendLeaveStatusEmail(emp, leave, status);
         } catch (Exception ex) {
-            // swallow to avoid breaking flow; logging would be better
-            System.err.println("Failed to send leave status notification: " + ex.getMessage());
+            System.err.println("⚠️  Warning: Failed to send notification email");
+            System.err.println("   Error: " + ex.getMessage());
         }
+
+        System.out.println("═══════════════════════════════════════════════════════════");
+        System.out.println("✅ Leave request processing complete");
+        System.out.println("═══════════════════════════════════════════════════════════\n");
     }
 
     /**
