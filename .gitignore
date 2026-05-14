@@ -6,3 +6,12 @@ target/
 .env
 *.db
 node_modules/
+
+# Documentation files (keep locally, don't push to GitHub)
+*.md
+
+# Miscellaneous
+*.log
+*.swp
+*.swo
+
